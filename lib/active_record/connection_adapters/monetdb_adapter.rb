@@ -18,7 +18,7 @@
 # MonetDB Active Record adapter
 # monetdb_adapter.rb
 
-# The code is an adaption of the adapter developer by Michalis Polakis (2008), to work on top of the pure ruby MonetDB 
+# The code is an adaption of the adapter developer by Michalis Polakis (2008), to work on top of the pure ruby MonetDB
 # interface
 
 # Refreshed by Martin Samson (2011)
@@ -27,6 +27,7 @@ MDB_SYS_SCHEMA = "sys."
 MDB_NON_SYSTEM_TABLES_ONLY = "and system = false"
 
 require 'active_record/connection_adapters/abstract_adapter'
+require 'arel/visitors/bind_visitor'
 require 'MonetDB'
 
 module ActiveRecord
