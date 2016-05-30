@@ -1,6 +1,18 @@
-require "active_record/connection_adapters/abstract_adapter"
-require "active_record/connection_adapters/statement_pool"
 require "MonetDB"
+
+require "active_record/connection_adapters/abstract_adapter"
+require "active_record/connection_adapters/monetdb/column"
+require "active_record/connection_adapters/monetdb/database_statements"
+require "active_record/connection_adapters/monetdb/explain_pretty_printer"
+require "active_record/connection_adapters/monetdb/oid"
+require "active_record/connection_adapters/monetdb/quoting"
+require "active_record/connection_adapters/monetdb/referential_integrity"
+require "active_record/connection_adapters/monetdb/schema_definitions"
+require "active_record/connection_adapters/monetdb/schema_dumper"
+require "active_record/connection_adapters/monetdb/schema_statements"
+require "active_record/connection_adapters/monetdb/type_metadata"
+require "active_record/connection_adapters/monetdb/utils"
+require "active_record/connection_adapters/statement_pool"
 
 module ActiveRecord
   module ConnectionHandling
@@ -11,7 +23,7 @@ module ActiveRecord
       client = MonetDB.new(config)
       config[:user] = config.delete[:username] || "monetdb"
       config[:passwd] = config.delete[:password] if config[:password]
-      config[:db_name] = config.delete[:database]
+      config[:db_name] = config.delete[:database] if config[:database]
       config[:auth_type] = config[:auth_type] || "SHA1"
 
       begin
@@ -32,17 +44,45 @@ module ActiveRecord
     class MonetDBAdapter < AbstractAdapter
       ADAPTER_NAME = 'MonetDB'.freeze
 
+      NATIVE_DATABASE_TYPES = {
+        # According to the documentation, {PostgreSQL syntax}[https://www.monetdb.org/Documentation/SQLreference/TableIdentityColumn]
+        # is also supported for primary keys
+        primary_key: "serial primary key",
+        # {Builtin SQL types}[https://www.monetdb.org/Documentation/Manuals/SQLreference/BuiltinTypes]
+        string:      { name: "character varying" },
+        text:        { name: "text" },
+        integer:     { name: "integer" },
+        bigint:      { name: "bigint" },
+        float:       { name: "float" },
+        decimal:     { name: "decimal" },
+        boolean:     { name: "boolean" },
+        binary:      { name: "blob" },
+        # {Temporal types}[https://www.monetdb.org/Documentation/SQLreference/Temporal]
+        datetime:    { name: "timestamp" },
+        time:        { name: "time" },
+        date:        { name: "date" },
+        # {JSON datatype}[https://www.monetdb.org/Documentation/Manuals/SQLreference/Types/JSON]
+        json:        { name: "json" },
+        # {URL datatype}[https://www.monetdb.org/Documentation/Manuals/SQLreference/URLtype]
+        url:         { name: "url" },
+        # {UUID datatype}[https://www.monetdb.org/Documentation/Manuals/SQLreference/UUIDtype]
+        uuid:        { name: "uuid" },
+        # {Network Address Type}[https://www.monetdb.org/Documentation/Manuals/SQLreference/inet]
+        inet:        { name: "inet" }
+      }
+
       # Initializes a MonetDB adapter
       def initialize(connection, logger, connection_parameters, config)
         super(connection, logger)
       end
 
-      def valid_type?
+      def valid_type?(type)
+        !native_database_types[type].nil?
       end
 
-      def schema_creation
-        SchemaCreation.new self
-      end
+      #def schema_creation
+      #  SchemaCreation.new self
+      #end
 
       def supports_migrations?
         true
@@ -65,41 +105,49 @@ module ActiveRecord
       end
 
       def supports_index_sort_order?
+        true
       end
 
       def supports_partial_index?
+        true
       end
 
       def supports_explain?
+        true
       end
 
       def supports_transaction_isolation?
+        true
       end
 
       def supports_extensions?
+        false
       end
 
       def supports_indexes_in_create?
+        true
       end
 
       def supports_foreign_keys?
+        true
       end
 
       def supports_views?
+        true
       end
 
       # This is meant to be implemented by the adapters that support extensions
-      def disable_extension(name)
-      end
+      #def disable_extension(name)
+      #end
 
       # This is meant to be implemented by the adapters that support extensions
-      def enable_extension(name)
-      end
+      #def enable_extension(name)
+      #end
 
       # A list of extensions, to be filled in by adapters that support them.
-      def extensions
-        []
-      end
+      #def extensions
+      #  []
+      #end
 
       # A list of index algorithms, to be filled by adapters that support them.
       def index_algorithms
@@ -112,21 +160,22 @@ module ActiveRecord
       # checking whether the database is actually capable of responding, i.e. whether
       # the connection isn't stale.
       def active?
+        @connection.is_connected?
       end
 
       # Disconnects from the database if already connected, and establishes a
       # new connection with the database. Implementors should call super if they
       # override the default implementation.
       def reconnect!
-        clear_cache!
-        reset_transaction
+        super
+        @connection.reconnect
       end
 
       # Disconnects from the database if already connected. Otherwise, this
       # method does nothing.
       def disconnect!
-        clear_cache!
-        reset_transaction
+        super
+        @connection.close rescue nil
       end
 
       # Reset the state of this connection, directing the DBMS to clear
@@ -136,26 +185,17 @@ module ActiveRecord
       # The default implementation does nothing; the implementation should be
       # overridden by concrete adapters.
       def reset!
-        # this should be overridden by concrete adapters
+        clear_cache!
+        reset_transaction
+        @connection.query "ROLLBACK"
+        reconnect!
       end
 
       ###
       # Clear any caching the database adapter may be doing, for example
       # clearing the prepared statement cache. This is database specific.
       def clear_cache!
-        # this should be overridden by concrete adapters
-      end
-
-      # Returns true if its required to reload the connection between requests for development mode.
-      def requires_reloading?
-        false
-      end
-
-      # Checks whether the connection to the database is still active (i.e. not stale).
-      # This is done under the hood by calling <tt>active?</tt>. If the connection
-      # is no longer active, then this method will reconnect to the database.
-      def verify!(*ignored)
-        reconnect! unless active?
+        @statements.clear
       end
 
       # Provides access to the underlying database driver for this adapter. For
@@ -169,50 +209,19 @@ module ActiveRecord
       end
 
       def create_savepoint(name = nil)
+        @connection.save
       end
 
       def release_savepoint(name = nil)
-      end
-
-      def case_sensitive_modifier(node, table_attribute)
-        node
-      end
-
-      def case_sensitive_comparison(table, attribute, column, value)
-        table_attr = table[attribute]
-        value = case_sensitive_modifier(value, table_attr) unless value.nil?
-        table_attr.eq(value)
-      end
-
-      def case_insensitive_comparison(table, attribute, column, value)
-        table[attribute].lower.eq(table.lower(value))
+        @connection.release
       end
 
       def current_savepoint_name
-        current_transaction.savepoint_name
-      end
-
-      # Check the connection back in to the connection pool
-      def close
-        pool.checkin self
-      end
-
-      def type_map # :nodoc:
-        @type_map ||= Type::TypeMap.new.tap do |mapping|
-          initialize_type_map(mapping)
-        end
+        @connection.transactions
       end
 
       def new_column(name, default, cast_type, sql_type = nil, null = true)
         Column.new(name, default, cast_type, sql_type, null)
-      end
-
-      def lookup_cast_type(sql_type) # :nodoc:
-        type_map.lookup(sql_type)
-      end
-
-      def column_name_for_operation(operation, node) # :nodoc:
-        visitor.accept(node, collector).value
       end
 
       class DatabaseLimits
@@ -221,9 +230,65 @@ module ActiveRecord
       protected
 
       def initialize_type_map(m) # :nodoc:
+        # Builtin SQL types
+        m.register_type 'text', Type::Text.new
+        register_class_with_limit m, 'varchar', Type::String
+        m.alias_type 'char', 'varchar'
+        m.alias_type 'name', 'varchar'
+        m.register_type 'bool', Type::Boolean.new
+        # Temporal types
+        m.register_type 'date', OID::Date.new
+        m.register_type 'time', OID::Time.new
+        m.alias_type 'timestamptz', 'timestamp'
+        m.register_type 'timestamp' do |_, _, sql_type|
+          precision = extract_precision(sql_type)
+          OID::DateTime.new(precision: precision)
+        end
+        # JSON datatype
+        m.register_type 'json', OID::Json.new
+        # URL datatype
+        m.register_type 'url', OID::SpecializedString.new(:url)
+        # UUID datatype
+        m.register_type 'uuid', OID::Uuid.new
+        # Network Address Type
+        m.register_type 'inet', OID::Inet.new
+        # Additional numeric types
+        m.register_type 'numeric' do |_, fmod, sql_type|
+          precision = extract_precision(sql_type)
+          scale = extract_scale(sql_type)
+
+          # The type for the numeric depends on the width of the field,
+          # so we'll do something special here.
+          #
+          # When dealing with decimal columns:
+          #
+          # places after decimal  = fmod - 4 & 0xffff
+          # places before decimal = (fmod - 4) >> 16 & 0xffff
+          if fmod && (fmod - 4 & 0xffff).zero?
+            Type::DecimalWithoutScale.new(precision: precision)
+          else
+            OID::Decimal.new(precision: precision, scale: scale)
+          end
+        end
       end
 
-      def extract_limit(sql_type)
+      def extract_limit(sql_type) # :nodoc:
+        case sql_type
+        when /^hugeint/i
+          16
+        when /^bigint/i
+          8
+        when /^smallint/i
+          2
+        when /^tinyint/i
+          1
+        else
+          super
+        end
+      end
+
+      def native_database_types
+        NATIVE_DATABASE_TYPES
       end
     end
 
