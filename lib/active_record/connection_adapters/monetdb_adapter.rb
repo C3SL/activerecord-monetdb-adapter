@@ -80,9 +80,9 @@ module ActiveRecord
         !native_database_types[type].nil?
       end
 
-      #def schema_creation
-      #  SchemaCreation.new self
-      #end
+      def schema_creation
+        MonetDB::SchemaCreation.new self
+      end
 
       def supports_migrations?
         true
@@ -290,9 +290,6 @@ module ActiveRecord
       def native_database_types
         NATIVE_DATABASE_TYPES
       end
-    end
-
-    class MonetDBColumn < Column
     end
 
     module MonetDB
