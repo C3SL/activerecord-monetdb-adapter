@@ -8,7 +8,6 @@ require "active_record/connection_adapters/monetdb/database_statements"
 require "active_record/connection_adapters/monetdb/quoting"
 require "active_record/connection_adapters/monetdb/schema_creation"
 require "active_record/connection_adapters/monetdb/schema_definitions"
-require "active_record/connection_adapters/monetdb/schema_dumper"
 require "active_record/connection_adapters/monetdb/schema_statements"
 
 module ActiveRecord
@@ -70,7 +69,6 @@ module ActiveRecord
 
       include MonetDB::DatabaseStatements
       include MonetDB::Quoting
-      include MonetDB::SchemaCreation
       include MonetDB::SchemaStatements
 
       # Initializes a MonetDB adapter
