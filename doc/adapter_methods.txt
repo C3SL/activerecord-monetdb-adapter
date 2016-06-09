@@ -1,8 +1,38 @@
+0. Requisitos
+
+
+A documentação dos adaptadores do ActiveRecord [0], em especial do
+AbstractAdapter, fornece exemplos interessantes e a interface a ser
+implementada por conectores.
+
+A conexão com o MonetDB é gerenciada pela gem MonetDB, disponibilizada
+no repositório oficial, cujo fork pode ser encontrado em [1].
+
+[0] https://github.com/rails/rails/tree/4-2-stable/activerecord/lib/active_record/connection_adapters
+[1] https://gitlab.c3sl.ufpr.br/simcaq/monetdb-sql
+
+1. Sobre o projeto
+
+A ideia do projeto é implementar inicialmente um adaptador Rails para o SGBD MonetDB
+com o mínimo de funções necessárias para o funcionamento correto no ActiveRecord a
+partir da versão 4. Assim que tivermos um protótipo funcional, disponibilizá-lo para
+a comunidade via RubyGems.
+
+Depois disso, implementar as demais funcionalidades suportadas pelo banco e pelo próprio ActiveRecord.
+
+2. Métodos a serem implementados na versão inicial
+
 Métodos marcados com:
- - (*) devem ser verificados no MonetDB. Se as funções do AbstractAdapter funcionarem no MonetDB, não é necessário implementá-las no adaptador
  - (!) devem ser implementados, seguindo a interface do ActiveRecord::AbstractAdapter
+ - (*) devem ser verificados no MonetDB. Se as funções do AbstractAdapter funcionarem, não é necessário implementá-las na versão inicial do adaptador
 
 Módulo (namespace): ActiveRecord::ConnectionAdapters::MonetDB
+
+monetdb_adapter.rb
+
+ - implementar uma classe explain e mudar a função supports_explain? (próxima versão)
+ - implementar uma forma de suportar extensões do banco e mudar supports_extensions? (próxima versão)
+ - implementar classes de tipos "extras" e adicioná-las no register_type_map (JSON, UUID e URL) (versão futura)
 
 monetdb/database_statements.rb
 |- DatabaseStatements
