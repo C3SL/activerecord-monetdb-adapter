@@ -19,6 +19,9 @@ module ActiveRecord
 
         # Executes the SQL statement in the context of this connection.
         def execute(sql, name = nil)
+            log(sql, name) do
+                @connection.async_exec(sql)
+            end
         end
 
         # Executes +sql+ statement in the context of this connection using
