@@ -1,18 +1,15 @@
 require "MonetDB"
 
 require "active_record/connection_adapters/abstract_adapter"
-require "active_record/connection_adapters/monetdb/column"
+require "active_record/connection_adapters/column"
+require "active_record/connection_adapters/statement_pool"
+
 require "active_record/connection_adapters/monetdb/database_statements"
-require "active_record/connection_adapters/monetdb/explain_pretty_printer"
-require "active_record/connection_adapters/monetdb/oid"
 require "active_record/connection_adapters/monetdb/quoting"
-require "active_record/connection_adapters/monetdb/referential_integrity"
+require "active_record/connection_adapters/monetdb/schema_creation"
 require "active_record/connection_adapters/monetdb/schema_definitions"
 require "active_record/connection_adapters/monetdb/schema_dumper"
 require "active_record/connection_adapters/monetdb/schema_statements"
-require "active_record/connection_adapters/monetdb/type_metadata"
-require "active_record/connection_adapters/monetdb/utils"
-require "active_record/connection_adapters/statement_pool"
 
 module ActiveRecord
   module ConnectionHandling
@@ -71,6 +68,11 @@ module ActiveRecord
         inet:        { name: "inet" }
       }
 
+      include MonetDB::DatabaseStatements
+      include MonetDB::Quoting
+      include MonetDB::SchemaCreation
+      include MonetDB::SchemaStatements
+
       # Initializes a MonetDB adapter
       def initialize(connection, logger, connection_parameters, config)
         super(connection, logger)
@@ -113,7 +115,7 @@ module ActiveRecord
       end
 
       def supports_explain?
-        true
+        false
       end
 
       def supports_transaction_isolation?
@@ -224,9 +226,6 @@ module ActiveRecord
         Column.new(name, default, cast_type, sql_type, null)
       end
 
-      class DatabaseLimits
-      end
-
       protected
 
       def initialize_type_map(m) # :nodoc:
@@ -237,21 +236,21 @@ module ActiveRecord
         m.alias_type 'name', 'varchar'
         m.register_type 'bool', Type::Boolean.new
         # Temporal types
-        m.register_type 'date', OID::Date.new
-        m.register_type 'time', OID::Time.new
+        m.register_type 'date', Type::Date.new
+        m.register_type 'time', Type::DateTime.new
         m.alias_type 'timestamptz', 'timestamp'
         m.register_type 'timestamp' do |_, _, sql_type|
           precision = extract_precision(sql_type)
           OID::DateTime.new(precision: precision)
         end
         # JSON datatype
-        m.register_type 'json', OID::Json.new
+        # m.register_type 'json', Type::Json.new
         # URL datatype
-        m.register_type 'url', OID::SpecializedString.new(:url)
+        # m.register_type 'url', Type::SpecializedString.new(:url)
         # UUID datatype
-        m.register_type 'uuid', OID::Uuid.new
+        # m.register_type 'uuid', Type::Uuid.new
         # Network Address Type
-        m.register_type 'inet', OID::Inet.new
+        # m.register_type 'inet', Type::Inet.new
         # Additional numeric types
         m.register_type 'numeric' do |_, fmod, sql_type|
           precision = extract_precision(sql_type)
@@ -267,7 +266,7 @@ module ActiveRecord
           if fmod && (fmod - 4 & 0xffff).zero?
             Type::DecimalWithoutScale.new(precision: precision)
           else
-            OID::Decimal.new(precision: precision, scale: scale)
+            Type::Decimal.new(precision: precision, scale: scale)
           end
         end
       end
@@ -291,26 +290,5 @@ module ActiveRecord
         NATIVE_DATABASE_TYPES
       end
     end
-
-    module MonetDB
-      module Quoting
-      end
-
-      module DatabaseStatements
-      end
-
-      module SchemaStatements
-      end
-
-      module DatabaseLimits
-      end
-
-      module QueryCache
-      end
-
-      module Savepoints
-      end
-    end
   end
-
 end
