@@ -1,0 +1,83 @@
+Métodos marcados com:
+ - (*) devem ser verificados no MonetDB. Se as funções do AbstractAdapter funcionarem no MonetDB, não é necessário implementá-las no adaptador
+ - (!) devem ser implementados, seguindo a interface do ActiveRecord::AbstractAdapter
+
+Módulo (namespace): ActiveRecord::ConnectionAdapters::MonetDB
+
+monetdb/database_statements.rb
+|- DatabaseStatements
+  |- select_value (*)
+  |- select_values (*)
+  |- select_rows (*)
+  |- execute (!)
+  |- exec_query (!)
+  |- exec_insert (!)
+  |- exec_delete (!)
+  |- truncate (!)
+  |- exec_update (!)
+  |- insert_sql (!)
+  |- update_sql (!)
+  |- delete_sql (!)
+  |- sql_for_insert (!)
+
+monetdb/schema_statements.rb
+
+|- SchemaStatements
+  |- native_database_types (*)
+  |- data_sources (!)
+  |- data_source_exists? (!)
+  |- table_exists? (!)
+  |- columns (!)
+  |- column_exists? (!)
+  |- rename_table (!)
+  |- drop_table (*)
+  |- add_column (!)
+  |- remove_columns (*)
+  |- remove_column (*)
+  |- change_column (!)
+  |- change_column_default (!)
+  |- change_column_null (!)
+  |- rename_column (!)
+  |- add_index (*)
+  |- remove_index (*)
+  |- remove_index! (*)
+  |- rename_index (*)
+  |- index_name (*)
+  |- index_name_exists? (*)
+  |- add_reference (*)
+  |- remove_reference (*)
+  |- foreign_keys (!)
+  |- add_foreign_key (*)
+  |- remove_foreign_key (*)
+  |- foreign_key_column_for (*)
+  |- type_to_sql (*)
+  |- columns_for_distinct (*)
+  |- quoted_columns_for_index (*)
+
+monetdb/schema_creation.rb
+
+|- SchemaCreation (*)
+  |- accept (*)
+  |- visit_AddColumn (*)
+  |- visit_AlterTable (*)
+  |- visit_ColumnDefinition (*)
+  |- visit_TableDefinition (*)
+  |- visit_AddForeignKey (*)
+  |- visit_DropForeignKey (*)
+  |- column_options (*)
+  |- quote_column_name (*)
+  |- quote_table_name (*)
+  |- type_to_sql (*)
+  |- add_column_options! (*)
+  |- quote_value (*)
+  |- options_include_default? (*)
+  |- action_sql (*)
+  |- type_for_column (*)
+
+monetdb/schema_definitions.rb
+
+|- IndexDefinition (*)
+
+|- ColumnDefinition (*)
+
+|- ForeignKeyDefinition (*)
