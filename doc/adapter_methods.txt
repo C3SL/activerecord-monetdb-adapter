@@ -41,7 +41,7 @@ monetdb/database_statements.rb
   |- select_rows (*)
   |- execute (!) - OK
   |- exec_query (!) - OK Just without cache. We need to implement this later
-  |- exec_insert (!)
+  |- exec_insert (!) - OK
   |- exec_delete (!)
   |- truncate (!)
   |- exec_update (!)

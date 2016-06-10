@@ -300,6 +300,10 @@ module ActiveRecord
       def native_database_types
         NATIVE_DATABASE_TYPES
       end
+      def extract_table_ref_from_insert_sql(sql) # :nodoc:
+        sql[/into\s+([^\(]*).*values\s*\(/im]
+        $1.strip if $1
+      end
     end
   end
 end

@@ -27,7 +27,7 @@ module ActiveRecord
         # Executes +sql+ statement in the context of this connection using
         # +binds+ as the bind substitutes. +name+ is logged along with
         # the executed +sql+ statement.
-        def exec_query(sql, name = 'SQL', binds = []) # 
+        def exec_query(sql, name = 'SQL', binds = []) 
             execute_and_clear(sql, name, binds) do |result|
                 types = {}
                 fields = result.fields
@@ -44,6 +44,17 @@ module ActiveRecord
         # +binds+ as the bind substitutes. +name+ is logged along with
         # the executed +sql+ statement.
         def exec_insert(sql, name, binds, pk = nil, sequence_name = nil)
+            val = exec_query(sql, name, binds)
+            if pk
+                unless sequence_name
+                    table_ref = extract_table_ref_from_insert_sql(sql)
+                    sequence_name = default_sequence_name(table_ref, pk)
+                    return val unless sequence_name
+                end
+                exec_query("SELECT currval('#{sequence_name}')", 'SQL')
+            else
+                val
+            end
         end
 
         # Executes delete +sql+ statement in the context of this connection using
