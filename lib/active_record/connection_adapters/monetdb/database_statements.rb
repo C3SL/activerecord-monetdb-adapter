@@ -27,7 +27,17 @@ module ActiveRecord
         # Executes +sql+ statement in the context of this connection using
         # +binds+ as the bind substitutes. +name+ is logged along with
         # the executed +sql+ statement.
-        def exec_query(sql, name = 'SQL', binds = [])
+        def exec_query(sql, name = 'SQL', binds = []) # 
+            execute_and_clear(sql, name, binds) do |result|
+                types = {}
+                fields = result.fields
+                fields.each_with_index do |fname, i|
+                    ftype = result.ftype i
+                    fmod  = result.fmod i
+                    types[fname] = get_oid_type(ftype, fmod, fname)
+                end
+                ActiveRecord::Result.new(fields, result.values, types)
+            end
         end
 
         # Executes insert +sql+ statement in the context of this connection using

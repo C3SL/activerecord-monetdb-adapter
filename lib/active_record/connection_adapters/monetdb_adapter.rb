@@ -271,6 +271,17 @@ module ActiveRecord
         end
       end
 
+      def execute_and_clear(sql, name, binds) # For now we just support exec_no_cache
+          result = exec_no_cache(sql, name, binds)
+          ret = yield result
+          result.clear
+          ret
+        end
+
+        def exec_no_cache(sql, name, binds)
+          log(sql, name, binds) { @connection.async_exec(sql, []) }
+        end
+
       def extract_limit(sql_type) # :nodoc:
         case sql_type
         when /^hugeint/i
