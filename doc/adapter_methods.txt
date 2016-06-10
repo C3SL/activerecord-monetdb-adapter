@@ -42,9 +42,9 @@ monetdb/database_statements.rb
   |- execute (!) - OK
   |- exec_query (!) - OK Just without cache. We need to implement this later
   |- exec_insert (!) - OK
-  |- exec_delete (!)
+  |- exec_delete (!) - OK
   |- truncate (!)
-  |- exec_update (!)
+  |- exec_update (!) - OK
   |- insert_sql (!)
   |- update_sql (!)
   |- delete_sql (!)

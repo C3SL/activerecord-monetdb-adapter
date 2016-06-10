@@ -61,21 +61,18 @@ module ActiveRecord
         # +binds+ as the bind substitutes. +name+ is logged along with
         # the executed +sql+ statement.
         def exec_delete(sql, name, binds)
-          exec_query(sql, name, binds)
+          execute_and_clear(sql, name, binds) {|result| result.cmd_tuples }
         end
+        # Executes update +sql+ statement in the context of this connection using
+        # +binds+ as the bind substitutes. +name+ is logged along with
+        # the executed +sql+ statement.
+        alias :exec_update :exec_delete # implements exec_update
 
         # Executes the truncate statement.
         def truncate(table_name, name = nil)
           raise NotImplementedError
-        end
-
-        # Executes update +sql+ statement in the context of this connection using
-        # +binds+ as the bind substitutes. +name+ is logged along with
-        # the executed +sql+ statement.
-        def exec_update(sql, name, binds)
-          exec_query(sql, name, binds)
-        end
-
+        end        
+  
         protected
 
         def insert_sql(sql, name = nil, pk = nil, id_value = nil, sequence_name = nil)
