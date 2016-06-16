@@ -34,4 +34,4 @@ group :development do
   gem 'pry'
 end
 
-gem 'monetdb-sql', :git => "https://gitlab.c3sl.ufpr.br/simcaq/monetdb-sql.git"
+gem 'monetdb-sql'
