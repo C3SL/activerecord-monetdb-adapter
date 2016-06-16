@@ -27,6 +27,16 @@ module ActiveRecord
           data_sources.include?(name.to_s)
         end
 
+        # Returns an array of table names defined in the database.
+        def tables(name = nil)
+          if name
+            ActiveSupport::Deprecation.warn(<<-MSG.squish)
+                Passing arguments to #tables is deprecated without replacement.
+            MSG
+          end
+          select_values("select tables.name from tables where tables.system = false")
+        end
+
         # Checks to see if the table +table_name+ exists on the database.
         #
         #   table_exists?(:developers)
