@@ -20,7 +20,7 @@ module ActiveRecord
       config[:user] = config.delete(:username) || "monetdb"
       config[:passwd] = config.delete(:password) if config[:password]
       config[:db_name] = config.delete(:database) if config[:database]
-      config[:auth_type] = config(:auth_type) || "SHA1"
+      config[:auth_type] = config[:auth_type] || "SHA1"
 
       begin
         client.connect(config)
