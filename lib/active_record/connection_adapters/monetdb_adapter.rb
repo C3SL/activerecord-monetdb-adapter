@@ -18,7 +18,7 @@ module ActiveRecord
 
       client = MonetDB.new
       config[:host] = config.delete(:hostname) || "127.0.0.1"
-      config[:port] = config.delete(:port).to_s || "50000"
+      config[:port] = config.delete(:port) || "50000"
       config[:user] = config.delete(:username) || "monetdb"
       config[:passwd] = config.delete(:password) if config[:password]
       config[:db_name] = config.delete(:database) if config[:database]
