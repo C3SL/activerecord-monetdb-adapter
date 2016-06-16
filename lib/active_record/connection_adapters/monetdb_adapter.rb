@@ -32,7 +32,7 @@ module ActiveRecord
         end
       end
 
-      ConnectionAdapters::MonetDBAdapter.new(client, logger, options, config)
+      ConnectionAdapters::MonetDBAdapter.new(client, logger, config)
     end
   end
 
@@ -70,11 +70,6 @@ module ActiveRecord
       include MonetDB::DatabaseStatements
       include MonetDB::Quoting
       include MonetDB::SchemaStatements
-
-      # Initializes a MonetDB adapter
-      def initialize(connection, logger, connection_parameters, config)
-        super(connection, logger)
-      end
 
       def valid_type?(type)
         !native_database_types[type].nil?
