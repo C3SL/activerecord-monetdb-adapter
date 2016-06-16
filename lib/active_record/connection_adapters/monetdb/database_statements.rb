@@ -20,15 +20,15 @@ module ActiveRecord
         # Returns an array of arrays containing the field values.
         # Order is the same as that returned by +columns+.
         def select_rows(sql, name = nil, binds = [])
-          ret = nil
-          execute(sql, name) do |result|
-            ret = result.fetch_all
-          end
+          result = execute(sql, name)
+          ret = result.fetch_all
+          @logger.info "#{__method__} ret = #{ret}"
           ret
         end
 
         # Executes the SQL statement in the context of this connection.
         def execute(sql, name = nil)
+          @logger.info "#{__method__} sql = \"#{sql}\""
           log(sql, name) do
             @connection.query(sql)
           end
@@ -39,7 +39,7 @@ module ActiveRecord
         # the executed +sql+ statement.
         def exec_query(sql, name = 'SQL', binds = [])
           result = @connection.query(sql)
-          result_set = result.fetchall
+          result_set = result.fetch_all
           columns = result.name_fields
           types = result.type_fields
           ActiveRecord::Result.new(result_set, columns, types)
