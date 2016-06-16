@@ -16,7 +16,7 @@ module ActiveRecord
     def monetdb_connection(config)
       config = config.symbolize_keys
 
-      client = MonetDB.new(config)
+      client = MonetDB.new
       config[:user] = config.delete[:username] || "monetdb"
       config[:passwd] = config.delete[:password] if config[:password]
       config[:db_name] = config.delete[:database] if config[:database]
