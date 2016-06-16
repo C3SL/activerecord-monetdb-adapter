@@ -1,12 +1,19 @@
 ## How to setup
 
 git clone git@gitlab.c3sl.ufpr.br:simcaq/monetdb-sql.git
+
 cd monetdb-sql
+
 make
+
 gem install monetdb-sql-1.0.gem
+
 git clone git@gitlab.c3sl.ufpr.br:simcaq/activerecord-monetdb-adapter.git
+
 cd activerecord-monetdb-adapter
+
 gem build activerecord-monetdb-adapter.gemspec
+
 gem install activerecord-monetdb-adapter-0.2.gem
 
 Then, you can run the tests provided in the tests directory.
