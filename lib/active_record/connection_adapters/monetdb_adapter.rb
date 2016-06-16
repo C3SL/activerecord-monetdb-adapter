@@ -21,12 +21,9 @@ module ActiveRecord
       config[:port] = config.delete(:port) || "50000"
       config[:user] = config.delete(:username) || "monetdb"
       config[:passwd] = config.delete(:password) if config[:password]
-      config[:db_name] = config.delete(:database) if config[:database]
-      config[:auth_type] = config[:auth_type] || "SHA1"
-      config[:lang] = "sql"
 
       begin
-        client.connect(user = config[:user], passwd = config[:passwd], lang = config[:lang], host = config[:host], port = config[:port], database_connection_name = config[:db_name], auth_type = config[:auth_type])
+        client.conn(config)
       rescue MonetDBConnectionError => error
         if error.message.include?("no such database")
           raise ActiveRecord::NoDatabaseError.new(error.message, error)
