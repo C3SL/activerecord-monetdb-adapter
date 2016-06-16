@@ -31,7 +31,7 @@ module ActiveRecord
           raise
         end
       end
-
+      logger = Logger.new(STDOUT)
       ConnectionAdapters::MonetDBAdapter.new(client, logger, config)
     end
   end
@@ -43,9 +43,9 @@ module ActiveRecord
       NATIVE_DATABASE_TYPES = {
         # According to the documentation, {PostgreSQL syntax}[https://www.monetdb.org/Documentation/SQLreference/TableIdentityColumn]
         # is also supported for primary keys
-        primary_key: "serial primary key",
+        primary_key: "serial",
         # {Builtin SQL types}[https://www.monetdb.org/Documentation/Manuals/SQLreference/BuiltinTypes]
-        string:      { name: "character varying" },
+        string:      { name: "character varying(255)" },
         text:        { name: "text" },
         integer:     { name: "integer" },
         bigint:      { name: "bigint" },
@@ -219,6 +219,22 @@ module ActiveRecord
         Column.new(name, default, cast_type, sql_type, null)
       end
 
+      def native_database_types
+        NATIVE_DATABASE_TYPES
+      end
+
+      def primary_key(table_name) # :nodoc:
+        raise ArgumentError unless table_name.present?
+
+        table_id = execute("SELECT t.id FROM sys._tables t WHERE name = '#{table_name}'").fetch.first
+        pk_name = execute("SELECT kc.name
+          FROM sys.objects kc, sys.keys k
+          WHERE kc.id = k.id
+            AND k.table_id = #{table_id}
+            AND k.type = 0
+          ORDER BY kc.id, kc.nr").fetch.first
+      end
+
       protected
 
       def initialize_type_map(m) # :nodoc:
@@ -279,14 +295,11 @@ module ActiveRecord
         end
       end
 
-      def native_database_types
-        NATIVE_DATABASE_TYPES
-      end
-
       def extract_table_ref_from_insert_sql(sql) # :nodoc:
         sql[/into\s("[A-Za-z0-9_."\[\]\s]+"|[A-Za-z0-9_."\[\]]+)\s*/im]
         $1.strip if $1
       end
-    end
-  end
-end
+
+    end  # class MonetDBAdapter
+  end  # module ConnectionAdapters
+end  # module ActiveRecord
