@@ -34,7 +34,7 @@ module ActiveRecord
                 Passing arguments to #tables is deprecated without replacement.
             MSG
           end
-          select_values("select tables.name from tables where tables.system = false")
+          select_values("select t.name from sys._tables t where t.system = false")
         end
 
         # Checks to see if the table +table_name+ exists on the database.
@@ -47,7 +47,22 @@ module ActiveRecord
 
         # Returns an array of Column objects for the table specified by +table_name+.
         # See the concrete implementation for details on the expected parameter values.
-        def columns(table_name) end
+        def columns(table_name)
+          table_id = execute("SELECT t.id FROM sys._tables t WHERE name = '#{table_name}'").fetch.first
+          @logger.info "[#{__method__}] table_id = #{table_id}"
+          columns = execute("SELECT c.name, c.type, c.type_digits, c.type_scale, c.\"default\", c.\"null\" FROM sys._columns c WHERE c.table_id = #{table_id} ORDER BY number ASC").fetch_all
+          @logger.info "[#{__method__}] #{columns}"
+          columns.map do |column|
+            name = column[0]
+            type = column[1]
+            digits = column[2]
+            scale = column[3]
+            default = column[4]
+            null = column[5]
+            @logger.info("[#{__method__}] name=#{name} type=#{type} digits=#{digits} scale=#{scale} default=#{default} null=#{null}")
+            new_column(name, default, type, (type == "varchar") ? digits : nil, null)
+          end
+        end
 
         # Checks to see if a column exists in a given table.
         #
@@ -555,11 +570,47 @@ module ActiveRecord
           columns
         end
 
+        def add_index_options(table_name, column_name, options = {}) #:nodoc:
+          column_names = Array(column_name)
+          @logger.info "[__method__] column_names = #{column_names}"
+          index_name   = index_name(table_name, column: column_names)
+
+          options.assert_valid_keys(:unique, :order, :name, :where, :length, :internal, :using, :algorithm, :type)
+
+          index_type = options[:unique] ? "UNIQUE" : ""
+          index_type = options[:type].to_s if options.key?(:type)
+          index_name = options[:name].to_s if options.key?(:name)
+          max_index_length = options.fetch(:internal, false) ? index_name_length : allowed_index_name_length
+
+          if options.key?(:algorithm)
+            algorithm = index_algorithms.fetch(options[:algorithm]) {
+              raise ArgumentError.new("Algorithm must be one of the following: #{index_algorithms.keys.map(&:inspect).join(', ')}")
+            }
+          end
+
+          using = "USING #{options[:using]}" if options[:using].present?
+
+          if supports_partial_index?
+            index_options = options[:where] ? " WHERE #{options[:where]}" : ""
+          end
+
+          if index_name.length > max_index_length
+            raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' is too long; the limit is #{max_index_length} characters"
+          end
+          if table_exists?(table_name) && index_name_exists?(table_name, index_name, false)
+            raise ArgumentError, "Index name '#{index_name}' on table '#{table_name}' already exists"
+          end
+          index_columns = quoted_columns_for_index(column_names, options).join(", ")
+
+          [index_name, index_type, index_columns, index_options, algorithm, using]
+        end
+
         protected
           # Overridden by the MySQL adapter for supporting index lengths
           def quoted_columns_for_index(column_names, options = {})
             option_strings = Hash[column_names.map {|name| [name, '']}]
-
+            @logger.info "[#{__method__}] column_names = #{column_names}"
+            @logger.info "[#{__method__}] option_strings = #{option_strings}"
             # add index sort order if supported
             if supports_index_sort_order?
               option_strings = add_index_sort_order(option_strings, column_names, options)
