@@ -25,7 +25,7 @@ module ActiveRecord
       config[:auth_type] = config[:auth_type] || "SHA1"
 
       begin
-        client.connect(user = config[:user], passwd = config[:passwd], host = config[:host], port = config[:port], database_connection_name = config[:db_name], auth_type = config[:auth_type])
+        client.connect(user = config[:user], passwd = config[:passwd], lang = MonetDB::DEFAULT_LANG, host = config[:host], port = config[:port], database_connection_name = config[:db_name], auth_type = config[:auth_type])
       rescue MonetDBConnectionError => error
         if error.message.include?("no such database")
           raise ActiveRecord::NoDatabaseError.new(error.message, error)
