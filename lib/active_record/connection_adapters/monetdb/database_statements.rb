@@ -20,9 +20,11 @@ module ActiveRecord
         # Returns an array of arrays containing the field values.
         # Order is the same as that returned by +columns+.
         def select_rows(sql, name = nil, binds = [])
+          ret = nil
           execute(sql, name) do |result|
-            result.fetch_all
+            ret = result.fetch_all
           end
+          ret
         end
 
         # Executes the SQL statement in the context of this connection.
