@@ -24,8 +24,6 @@ module ActiveRecord
       config[:db_name] = config.delete(:database) if config[:database]
       config[:auth_type] = config[:auth_type] || "SHA1"
 
-      logger.log(config)
-
       begin
         client.connect(user = config[:user], passwd = config[:passwd], host = config[:host], port = config[:port], database_connection_name = config[:db_name], auth_type = config[:auth_type])
       rescue MonetDBConnectionError => error
