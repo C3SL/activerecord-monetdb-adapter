@@ -21,7 +21,7 @@ module ActiveRecord
         # Order is the same as that returned by +columns+.
         def select_rows(sql, name = nil, binds = [])
           execute(sql, name) do |result|
-            result.name_fields
+            result.fetch_all
           end
         end
 
