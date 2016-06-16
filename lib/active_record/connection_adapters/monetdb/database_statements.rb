@@ -5,6 +5,11 @@ module ActiveRecord
 
         # Returns a single value from a record
         #def select_value(arel, name = nil, binds = [])
+        #  arel, binds = binds_from_relation arel, binds
+        #  sql = to_sql(arel, binds)
+        #  exec_query(sql, name, binds) do |result|
+        #    result[0] if result.num_fields > 0 && result.num_rows > 0
+        #  end
         #end
 
         # Returns an array of the values of the first column in a select:
@@ -14,8 +19,11 @@ module ActiveRecord
 
         # Returns an array of arrays containing the field values.
         # Order is the same as that returned by +columns+.
-        #def select_rows(sql, name = nil, binds = [])
-        #end
+        def select_rows(sql, name = nil, binds = [])
+          execute(sql, name) do |result|
+            result.name_fields
+          end
+        end
 
         # Executes the SQL statement in the context of this connection.
         def execute(sql, name = nil)
